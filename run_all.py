@@ -7,6 +7,10 @@ Usage:
     python run_all.py 1            # run only experiment 1
     python run_all.py 2            # run only experiment 2
     python run_all.py 3            # run only experiment 3
+    python run_all.py 4            # statistical rigor
+    python run_all.py 5            # LLM agents (needs ANTHROPIC_API_KEY)
+    python run_all.py 6            # deep cheater analysis
+    python run_all.py 7            # futures market
 """
 
 import sys
@@ -67,7 +71,6 @@ def run_exp3():
     from experiments.exp3_trust import run_cheater_detection
     from experiments.visualize import plot_reputation_evolution
 
-    # Always-cheating
     print("--- Always-Cheating Mallory ---\n")
     sim, rep_history, deals_history = run_cheater_detection(cheater_prob=1.0)
 
@@ -89,7 +92,6 @@ def run_exp3():
 
     plot_reputation_evolution(rep_history, deals_history, "logs/exp3_always_cheat.png")
 
-    # Subtle cheater
     print("\n--- Subtle Mallory (5% cheat rate) ---\n")
     sim2, rep2, deals2 = run_cheater_detection(cheater_prob=0.05, rounds=100, seed=123)
 
@@ -104,23 +106,95 @@ def run_exp3():
     print(f"  5% cheat wealth:    {sim2.agents['cheater_mallory'].net_worth():.1f}")
 
 
+def run_exp4():
+    print("\n" + "=" * 60)
+    print("  EXPERIMENT 4: STATISTICAL RIGOR")
+    print("=" * 60 + "\n")
+
+    from experiments.exp4_statistical import (
+        stat_strategy_matrix, stat_convergence,
+        stat_tournament, stat_cheater_detection,
+    )
+
+    stat_strategy_matrix()
+    stat_convergence()
+    stat_tournament()
+    stat_cheater_detection()
+
+
+def run_exp5():
+    print("\n" + "=" * 60)
+    print("  EXPERIMENT 5: LLM AGENT NEGOTIATIONS")
+    print("=" * 60 + "\n")
+
+    from experiments.exp5_llm_agents import (
+        check_api_available, llm_vs_llm,
+        llm_vs_rule_based, mixed_population,
+    )
+
+    api_ok = check_api_available()
+    num = 20 if api_ok else 10
+    llm_vs_llm(num_trials=num)
+    llm_vs_rule_based(num_trials=num)
+    mixed_population(num_trials=5 if api_ok else 3)
+
+
+def run_exp6():
+    print("\n" + "=" * 60)
+    print("  EXPERIMENT 6: DEEP CHEATER ANALYSIS")
+    print("=" * 60 + "\n")
+
+    from experiments.exp6_cheater_depth import (
+        detection_threshold_sweep,
+        run_collaborative_vs_isolated,
+        run_adaptive_cheater,
+        run_multiple_cheaters,
+    )
+
+    detection_threshold_sweep()
+    run_collaborative_vs_isolated(cheat_rate=0.10)
+    run_collaborative_vs_isolated(cheat_rate=0.05)
+    run_adaptive_cheater()
+    run_multiple_cheaters(num_cheaters=2)
+    run_multiple_cheaters(num_cheaters=3)
+
+
+def run_exp7():
+    print("\n" + "=" * 60)
+    print("  EXPERIMENT 7: PREDICTIVE NEGOTIATION & FUTURES")
+    print("=" * 60 + "\n")
+
+    from experiments.exp7_futures import (
+        spot_vs_futures, demand_pattern_analysis, arbitrage_experiment,
+    )
+
+    spot_vs_futures()
+    demand_pattern_analysis()
+    arbitrage_experiment()
+
+
 def main():
     Path("logs").mkdir(exist_ok=True)
 
+    runners = {
+        "1": run_exp1,
+        "2": run_exp2,
+        "3": run_exp3,
+        "4": run_exp4,
+        "5": run_exp5,
+        "6": run_exp6,
+        "7": run_exp7,
+    }
+
     if len(sys.argv) > 1:
         exp = sys.argv[1]
-        if exp == "1":
-            run_exp1()
-        elif exp == "2":
-            run_exp2()
-        elif exp == "3":
-            run_exp3()
+        if exp in runners:
+            runners[exp]()
         else:
-            print(f"Unknown experiment: {exp}. Use 1, 2, or 3.")
+            print(f"Unknown experiment: {exp}. Use 1-7.")
     else:
-        run_exp1()
-        run_exp2()
-        run_exp3()
+        for key in sorted(runners):
+            runners[key]()
 
     print("\n" + "=" * 60)
     print("  ALL EXPERIMENTS COMPLETE")
