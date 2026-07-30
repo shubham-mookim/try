@@ -1,0 +1,44 @@
+================================================================
+  EXPERIMENT 16: NEGOTIATION OVERHEAD vs WORKLOAD RUNTIME
+================================================================
+
+Host: 4 cores
+
+--- 1. Tier-1 rule-based negotiation (no GPU, no API) ---
+  Full 2-agent negotiation: 15.7 microseconds (0.0157 ms), avg of 2000 reps
+  -> a Tier-1/2 agent 'decision' is essentially free.
+
+--- 2. Tier-3 LLM bid call (one inference decision) ---
+  Latency: mean=907 ms  p50=690 ms  p95=3401 ms  (range 490-3401 ms)
+  Tokens: 242 in / 1 out per decision
+  NOTE: this is API round-trip (network+queue+inference), the
+        number as-we-ran-it. Self-hosted pure inference is lower.
+
+--- 3. Real workload runtime (the thing being allocated) ---
+    iterations     wall_s      cpu_s
+       391,669      0.339      0.339
+     1,175,007      0.938      0.938
+     3,916,690      3.191      3.188
+    11,750,070      9.277      9.277
+
+================================================================
+  NEGOTIATION OVERHEAD as % of WORKLOAD (per job)
+================================================================
+
+        workload   runtime    rule-based     LLM(API)
+  ----------------------------------------------------
+         391,669     0.34s      0.0046%     267.15%
+       1,175,007     0.94s      0.0017%      96.61%
+       3,916,690     3.19s      0.0005%      28.41%
+      11,750,070     9.28s      0.0002%       9.77%
+          1s job     1.00s      0.0016%      90.66%
+         10s job    10.00s      0.0002%       9.07%
+       1 min job    60.00s      0.0000%       1.51%
+      10 min job   600.00s      0.0000%       0.15%
+
+  Interpretation:
+  - Rule-based negotiation overhead is negligible at ALL job sizes.
+  - One LLM decision ~= 907 ms. It is <1% overhead
+    once the workload runs longer than ~91 s.
+  - For sub-second jobs, DON'T use an LLM to allocate — use a
+    Tier-1 heuristic (free). The tier IS the cost knob.
